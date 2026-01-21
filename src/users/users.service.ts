@@ -33,8 +33,8 @@ export class UsersService {
     // Create User
     const createdUser = new this.userModel({
       email: userData.email,
-      firstName: userData.first_name,
-      lastName: userData.last_name,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
       image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.first_name}`,
       role: userData.role || 'user',
       preferences: {
@@ -49,8 +49,8 @@ export class UsersService {
     const passwordHash = await bcrypt.hash(password, salt);
 
     const credentials = new this.userCredentialModel({
-      userId: savedUser._id,
-      passwordHash,
+      user_id: savedUser._id,
+      password_hash: passwordHash,
     });
     await credentials.save();
 
@@ -69,19 +69,11 @@ export class UsersService {
       }
     }
 
-    const updateData: any = { ...updateUserDto };
-    if (updateUserDto.first_name) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      updateData.firstName = updateUserDto.first_name;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      delete updateData.first_name;
-    }
-    if (updateUserDto.last_name) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      updateData.lastName = updateUserDto.last_name;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      delete updateData.last_name;
-    }
+    const updateData: Record<string, any> = { ...updateUserDto };
+
+    // Properties are now snake_case in schema, so no need to rename
+    // but we can ensure clean data if needed.
+    // DTO fields are first_name, last_name, which match Schema fields now.
 
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateData, { new: true })
@@ -95,7 +87,11 @@ export class UsersService {
       const salt = await bcrypt.genSalt();
       const passwordHash = await bcrypt.hash(updateUserDto.password, salt);
       await this.userCredentialModel
-        .findOneAndUpdate({ userId: id }, { passwordHash }, { upsert: true })
+        .findOneAndUpdate(
+          { user_id: id },
+          { password_hash: passwordHash },
+          { upsert: true },
+        )
         .exec();
     }
 
@@ -107,7 +103,7 @@ export class UsersService {
     if (!deletedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    await this.userCredentialModel.findOneAndDelete({ userId: id }).exec();
+    await this.userCredentialModel.findOneAndDelete({ user_id: id }).exec();
     return deletedUser;
   }
 
@@ -116,9 +112,9 @@ export class UsersService {
   }
 
   async findCredentialsByUserId(
-    userId: Types.ObjectId,
+    user_id: Types.ObjectId,
   ): Promise<UserCredentialDocument | null> {
-    return this.userCredentialModel.findOne({ userId }).exec();
+    return this.userCredentialModel.findOne({ user_id }).exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
