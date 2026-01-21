@@ -58,7 +58,7 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+    return this.userModel.find().lean().exec();
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
@@ -77,6 +77,7 @@ export class UsersService {
 
     const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateData, { new: true })
+      .lean()
       .exec();
 
     if (!updatedUser) {
@@ -99,7 +100,10 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<User> {
-    const deletedUser = await this.userModel.findByIdAndDelete(id).exec();
+    const deletedUser = await this.userModel
+      .findByIdAndDelete(id)
+      .lean()
+      .exec();
     if (!deletedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -114,10 +118,16 @@ export class UsersService {
   async findCredentialsByUserId(
     user_id: Types.ObjectId,
   ): Promise<UserCredentialDocument | null> {
-    return this.userCredentialModel.findOne({ user_id }).exec();
+    return this.userCredentialModel
+      .findOne({ user_id })
+      .lean()
+      .exec() as Promise<UserCredentialDocument | null>;
   }
 
   async findById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id).exec();
+    return this.userModel
+      .findById(id)
+      .lean()
+      .exec() as Promise<UserDocument | null>;
   }
 }
