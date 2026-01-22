@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -18,7 +17,7 @@ import {
   PlayerSessionDocument,
 } from './schemas/player-session.schema';
 import { CreatePlayerDto } from './dto/create-player.dto';
-import { LoginPlayerDto } from './dto/login-player.dto';
+import { UpdatePlayerDto } from './dto/update-player.dto';
 
 @Injectable()
 export class PlayersService {
@@ -37,13 +36,30 @@ export class PlayersService {
       throw new ConflictException('Email already exists');
     }
 
+    // Username logic
+    let username = createPlayerDto.username;
+    if (!username) {
+      username = createPlayerDto.email.split('@')[0];
+    }
+
+    // Ensure unique username
+    let uniqueUsername = username;
+    let counter = 1;
+    while (await this.findOneByUsername(uniqueUsername)) {
+      uniqueUsername = `${username}${counter}`;
+      counter++;
+    }
+    username = uniqueUsername;
+
     const { password, ...playerData } = createPlayerDto;
 
     // Create Player
     const createdPlayer = new this.playerModel({
       email: playerData.email,
+      username: username,
       first_name: playerData.first_name,
       last_name: playerData.last_name,
+      bio: playerData.bio,
     });
     const savedPlayer = await createdPlayer.save();
 
@@ -61,7 +77,10 @@ export class PlayersService {
     return this.login(savedPlayer);
   }
 
-  async validatePlayer(email: string, pass: string): Promise<any> {
+  async validatePlayer(
+    email: string,
+    pass: string,
+  ): Promise<PlayerDocument | null> {
     const player = await this.findOneByEmail(email);
     if (!player) {
       throw new UnauthorizedException('Player not found');
@@ -78,12 +97,12 @@ export class PlayersService {
 
     const isMatch = await bcrypt.compare(pass, credentials.password_hash);
     if (isMatch) {
-      return player.toObject();
+      return player;
     }
     throw new UnauthorizedException('Invalid password');
   }
 
-  async login(player: PlayerDocument | any) {
+  async login(player: PlayerDocument) {
     const payload = { email: player.email, sub: player._id, type: 'player' };
     const accessToken = this.jwtService.sign(payload);
 
@@ -112,7 +131,85 @@ export class PlayersService {
     return this.playerModel.findOne({ email }).exec();
   }
 
+  async findOneByUsername(username: string): Promise<PlayerDocument | null> {
+    return this.playerModel.findOne({ username }).exec();
+  }
+
   async findById(id: string): Promise<PlayerDocument | null> {
-    return this.playerModel.findById(id).lean().exec() as Promise<PlayerDocument | null>;
+    return this.playerModel
+      .findById(id)
+      .lean()
+      .exec() as Promise<PlayerDocument | null>;
+  }
+
+  async findByIdOrUsername(
+    idOrUsername: string,
+  ): Promise<PlayerDocument | null> {
+    if (Types.ObjectId.isValid(idOrUsername)) {
+      const player = await this.findById(idOrUsername);
+      if (player) return player;
+    }
+    return this.findOneByUsername(idOrUsername);
+  }
+
+  async findAll(): Promise<PlayerDocument[]> {
+    return this.playerModel.find().exec();
+  }
+
+  async update(id: string, updatePlayerDto: UpdatePlayerDto) {
+    const { password, ...playerData } = updatePlayerDto;
+
+    // Update Player Profile
+    if (Object.keys(playerData).length > 0) {
+      // If email is being changed, check if it exists
+      if (playerData.email) {
+        const existingPlayer = await this.findOneByEmail(playerData.email);
+        if (existingPlayer && existingPlayer._id.toString() !== id) {
+          throw new ConflictException('Email already exists');
+        }
+      }
+
+      // If username is being changed, check if it exists
+      if (playerData.username) {
+        const existingPlayer = await this.findOneByUsername(
+          playerData.username as string,
+        );
+        if (existingPlayer && existingPlayer._id.toString() !== id) {
+          throw new ConflictException('Username already taken');
+        }
+      }
+
+      await this.playerModel.findByIdAndUpdate(id, playerData).exec();
+    }
+
+    // Update Password
+    if (password) {
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash(password, salt);
+
+      await this.playerCredentialModel
+        .findOneAndUpdate(
+          { player_id: new Types.ObjectId(id) },
+          { password_hash: passwordHash },
+          { upsert: true },
+        )
+        .exec();
+    }
+
+    return this.findById(id);
+  }
+
+  async remove(id: string): Promise<PlayerDocument | null> {
+    // Delete credentials first
+    await this.playerCredentialModel
+      .findOneAndDelete({ player_id: new Types.ObjectId(id) })
+      .exec();
+
+    // Delete sessions
+    await this.playerSessionModel
+      .deleteMany({ player_id: new Types.ObjectId(id) })
+      .exec();
+
+    return this.playerModel.findByIdAndDelete(id).exec();
   }
 }

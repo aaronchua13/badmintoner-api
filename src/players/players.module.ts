@@ -5,8 +5,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlayersService } from './players.service';
 import { PlayersController } from './players.controller';
 import { Player, PlayerSchema } from './schemas/player.schema';
-import { PlayerCredential, PlayerCredentialSchema } from './schemas/player-credential.schema';
-import { PlayerSession, PlayerSessionSchema } from './schemas/player-session.schema';
+import {
+  PlayerCredential,
+  PlayerCredentialSchema,
+} from './schemas/player-credential.schema';
+import {
+  PlayerSession,
+  PlayerSessionSchema,
+} from './schemas/player-session.schema';
 import { PlayerJwtStrategy } from './player-jwt.strategy';
 
 @Module({

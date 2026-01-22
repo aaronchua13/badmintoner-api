@@ -15,4 +15,5 @@ export class PlayerCredential {
   password_hash: string;
 }
 
-export const PlayerCredentialSchema = SchemaFactory.createForClass(PlayerCredential);
+export const PlayerCredentialSchema =
+  SchemaFactory.createForClass(PlayerCredential);

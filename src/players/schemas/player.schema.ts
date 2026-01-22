@@ -18,11 +18,20 @@ export class Player {
   @Prop({ required: true, unique: true })
   email: string;
 
+  @Prop({ unique: true, sparse: true })
+  username: string;
+
   @Prop()
   first_name: string;
 
   @Prop()
   last_name: string;
+
+  @Prop()
+  bio: string;
+
+  @Prop({ type: [String], default: [] })
+  clubs: string[];
 
   @Prop({ default: true })
   is_active: boolean;

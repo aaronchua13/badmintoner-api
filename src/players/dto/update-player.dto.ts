@@ -1,16 +1,15 @@
 import {
   IsEmail,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
   Matches,
 } from 'class-validator';
 
-export class CreatePlayerDto {
+export class UpdatePlayerDto {
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsOptional()
@@ -20,17 +19,17 @@ export class CreatePlayerDto {
   username?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MinLength(6)
-  password: string;
+  password?: string;
 
   @IsString()
-  @IsNotEmpty()
-  first_name: string;
+  @IsOptional()
+  first_name?: string;
 
   @IsString()
-  @IsNotEmpty()
-  last_name: string;
+  @IsOptional()
+  last_name?: string;
 
   @IsString()
   @IsOptional()
