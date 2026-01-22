@@ -1,61 +1,45 @@
 import {
   Controller,
-  Post,
   Body,
   Get,
   Patch,
   Delete,
   UseGuards,
   Request,
-  UnauthorizedException,
   Param,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { PlayersService } from './players.service';
-import { CreatePlayerDto } from './dto/create-player.dto';
-import { LoginPlayerDto } from './dto/login-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
-import { PlayerJwtAuthGuard } from './player-jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 
-@Controller(['players', 'player'])
+@Controller('players')
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 
   @Public()
-  @Post('signup')
-  signup(@Body() createPlayerDto: CreatePlayerDto) {
-    return this.playersService.create(createPlayerDto);
-  }
-
-  @Public()
-  @Post('login')
-  async login(@Body() loginPlayerDto: LoginPlayerDto) {
-    const player = await this.playersService.validatePlayer(
-      loginPlayerDto.email,
-      loginPlayerDto.password,
-    );
-    if (!player) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-    return this.playersService.login(player);
-  }
-
-  @Public()
-  @UseGuards(PlayerJwtAuthGuard)
+  @UseGuards(AuthGuard(['jwt', 'player-jwt']))
   @Get('profile')
   getProfile(@Request() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const playerId = req.user.player_id as string;
+    if (!playerId) {
+      throw new ForbiddenException('Only players have profiles');
+    }
     return this.playersService.findById(playerId);
   }
 
   @Public()
-  @UseGuards(PlayerJwtAuthGuard)
+  @UseGuards(AuthGuard(['jwt', 'player-jwt']))
   @Patch('profile')
   updateProfile(@Request() req: any, @Body() updatePlayerDto: UpdatePlayerDto) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const playerId = req.user.player_id as string;
+    if (!playerId) {
+      throw new ForbiddenException('Only players have profiles');
+    }
     return this.playersService.update(playerId, updatePlayerDto);
   }
 
@@ -70,6 +54,7 @@ export class PlayersController {
   }
 
   @Public()
+  @UseGuards(AuthGuard(['jwt', 'player-jwt']))
   @Get()
   findAll() {
     return this.playersService.findAll();
@@ -86,14 +71,38 @@ export class PlayersController {
   }
 
   @Public()
+  @UseGuards(AuthGuard(['jwt', 'player-jwt']))
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePlayerDto: UpdatePlayerDto) {
+  update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() updatePlayerDto: UpdatePlayerDto,
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const user = req.user;
+
+    // Allow if user is admin (has user_id) or if user is the player being updated
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (user.player_id && user.player_id !== id) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+
     return this.playersService.update(id, updatePlayerDto);
   }
 
   @Public()
+  @UseGuards(AuthGuard(['jwt', 'player-jwt']))
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Request() req: any, @Param('id') id: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    const user = req.user;
+
+    // Allow if user is admin (has user_id) or if user is the player being deleted
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (user.player_id && user.player_id !== id) {
+      throw new ForbiddenException('You can only delete your own profile');
+    }
+
     return this.playersService.remove(id);
   }
 }

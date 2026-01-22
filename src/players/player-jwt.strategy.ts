@@ -38,7 +38,7 @@ export class PlayerJwtStrategy extends PassportStrategy(
     // Check if token is for player
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (payload.type !== 'player') {
-      throw new UnauthorizedException('Invalid token type');
+      return null;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access

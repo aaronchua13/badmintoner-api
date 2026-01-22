@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -31,7 +32,8 @@ export class PlayersService {
   ) {}
 
   async create(createPlayerDto: CreatePlayerDto) {
-    const existingPlayer = await this.findOneByEmail(createPlayerDto.email);
+    try {
+      const existingPlayer = await this.findOneByEmail(createPlayerDto.email);
     if (existingPlayer) {
       throw new ConflictException('Email already exists');
     }
@@ -74,7 +76,14 @@ export class PlayersService {
     await credentials.save();
 
     // Auto login after signup
-    return this.login(savedPlayer);
+      return await this.login(savedPlayer);
+    } catch (error) {
+      if (error instanceof ConflictException || error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('Error creating player:', error);
+      throw new InternalServerErrorException(`Failed to create player: ${error.message}`);
+    }
   }
 
   async validatePlayer(
@@ -172,7 +181,7 @@ export class PlayersService {
       // If username is being changed, check if it exists
       if (playerData.username) {
         const existingPlayer = await this.findOneByUsername(
-          playerData.username as string,
+          playerData.username,
         );
         if (existingPlayer && existingPlayer._id.toString() !== id) {
           throw new ConflictException('Username already taken');
