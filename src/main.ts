@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors();
 
   // Performance
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
   app.use(compression());
 
   // Global Config
