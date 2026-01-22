@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { PlayersModule } from './players/players.module';
 import { AppAuthGuard } from './common/guards/app-auth.guard';
 
 @Module({
@@ -27,6 +28,7 @@ import { AppAuthGuard } from './common/guards/app-auth.guard';
     }),
     UsersModule,
     AuthModule,
+    PlayersModule,
   ],
   controllers: [AppController],
   providers: [
