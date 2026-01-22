@@ -36,7 +36,7 @@ export class UsersService {
       first_name: userData.first_name,
       last_name: userData.last_name,
       image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.first_name}`,
-      role: userData.role || 'user',
+      role: userData.role || 'admin',
       preferences: {
         theme: 'light',
         notifications: true,
