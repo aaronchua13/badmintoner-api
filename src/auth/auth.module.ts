@@ -19,7 +19,7 @@ import { Session, SessionSchema } from './schemas/session.schema';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('JWT_SECRET') || 'secret',
         signOptions: { expiresIn: '60m' },
       }),
       inject: [ConfigService],
