@@ -17,11 +17,20 @@ async function bootstrap() {
   app.use(compression());
 
   // Global Config
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  logger.log(`Application is running on: await app.getUrl()`);
+  logger.log(`Application is running on: ${await app.getUrl()}`);
   logger.log(`Server running on port ${port}`);
 }
-bootstrap();
+void bootstrap();

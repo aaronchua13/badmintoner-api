@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserDocument } from '../users/schemas/user.schema';
@@ -27,8 +27,9 @@ export class AuthService {
     }
 
     const credentials = await this.usersService.findCredentialsByUserId(
-      user._id as any,
+      user._id as unknown as Types.ObjectId,
     );
+
     if (!credentials) {
       throw new UnauthorizedException('User has no credentials');
     }
@@ -37,7 +38,7 @@ export class AuthService {
     const credsObj = (credentials as any).toObject
       ? (credentials as any).toObject()
       : credentials;
-    const hash = credsObj.password_hash || credsObj.passwordHash;
+    const hash = (credsObj.password_hash || credsObj.passwordHash) as string;
     /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
 
     if (!hash) {

@@ -34,55 +34,61 @@ export class PlayersService {
   async create(createPlayerDto: CreatePlayerDto) {
     try {
       const existingPlayer = await this.findOneByEmail(createPlayerDto.email);
-    if (existingPlayer) {
-      throw new ConflictException('Email already exists');
-    }
+      if (existingPlayer) {
+        throw new ConflictException('Email already exists');
+      }
 
-    // Username logic
-    let username = createPlayerDto.username;
-    if (!username) {
-      username = createPlayerDto.email.split('@')[0];
-    }
+      // Username logic
+      let username = createPlayerDto.username;
+      if (!username) {
+        username = createPlayerDto.email.split('@')[0];
+      }
 
-    // Ensure unique username
-    let uniqueUsername = username;
-    let counter = 1;
-    while (await this.findOneByUsername(uniqueUsername)) {
-      uniqueUsername = `${username}${counter}`;
-      counter++;
-    }
-    username = uniqueUsername;
+      // Ensure unique username
+      let uniqueUsername = username;
+      let counter = 1;
+      while (await this.findOneByUsername(uniqueUsername)) {
+        uniqueUsername = `${username}${counter}`;
+        counter++;
+      }
+      username = uniqueUsername;
 
-    const { password, ...playerData } = createPlayerDto;
+      const { password, ...playerData } = createPlayerDto;
 
-    // Create Player
-    const createdPlayer = new this.playerModel({
-      email: playerData.email,
-      username: username,
-      first_name: playerData.first_name,
-      last_name: playerData.last_name,
-      bio: playerData.bio,
-    });
-    const savedPlayer = await createdPlayer.save();
+      // Create Player
+      const createdPlayer = new this.playerModel({
+        email: playerData.email,
+        username: username,
+        first_name: playerData.first_name,
+        last_name: playerData.last_name,
+        bio: playerData.bio,
+      });
+      const savedPlayer = await createdPlayer.save();
 
-    // Create Credentials
-    const salt = await bcrypt.genSalt();
-    const passwordHash = await bcrypt.hash(password, salt);
+      // Create Credentials
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash(password, salt);
 
-    const credentials = new this.playerCredentialModel({
-      player_id: savedPlayer._id,
-      password_hash: passwordHash,
-    });
-    await credentials.save();
+      const credentials = new this.playerCredentialModel({
+        player_id: savedPlayer._id,
+        password_hash: passwordHash,
+      });
+      await credentials.save();
 
-    // Auto login after signup
+      // Auto login after signup
       return await this.login(savedPlayer);
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof UnauthorizedException) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       console.error('Error creating player:', error);
-      throw new InternalServerErrorException(`Failed to create player: ${error.message}`);
+      const err = error as Error;
+      throw new InternalServerErrorException(
+        `Failed to create player: ${err.message}`,
+      );
     }
   }
 

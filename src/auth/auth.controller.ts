@@ -14,6 +14,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
+import { UserDocument } from '../users/schemas/user.schema';
 import { PlayersService } from '../players/players.service';
 import { CreatePlayerDto } from '../players/dto/create-player.dto';
 import { LoginPlayerDto } from '../players/dto/login-player.dto';
@@ -36,7 +37,7 @@ export class AuthController {
   @Post('admin/login')
   adminLogin(@Request() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    return this.authService.login(req.user);
+    return this.authService.login(req.user as UserDocument);
   }
 
   @Public()
@@ -74,16 +75,19 @@ export class AuthController {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       const userId = req.user.user_id;
+
       this.logger.log(`Fetching profile for user: ${userId}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const user = await this.usersService.findById(userId);
       if (!user) {
-         this.logger.warn(`User not found: ${userId}`);
-         throw new InternalServerErrorException('User not found');
+        this.logger.warn(`User not found: ${userId}`);
+        throw new InternalServerErrorException('User not found');
       }
       return user;
     } catch (error) {
-      this.logger.error(`Error in getProfile: ${error.message}`, error.stack);
-      throw new InternalServerErrorException(error.message);
+      const err = error as Error;
+      this.logger.error(`Error in getProfile: ${err.message}`, err.stack);
+      throw new InternalServerErrorException(err.message);
     }
   }
 
