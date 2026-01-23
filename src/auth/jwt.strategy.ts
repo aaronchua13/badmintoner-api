@@ -38,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const userId = payload.sub;
 
-    if (!userId || !Types.ObjectId.isValid(userId)) {
+    if (!userId || !Types.ObjectId.isValid(userId as string)) {
       this.logger.warn(`Invalid user ID in JWT payload: ${userId}`);
       throw new UnauthorizedException('Invalid token payload');
     }
@@ -52,9 +52,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         })
         .exec();
     } catch (error) {
-      this.logger.error(`Error validating session for user ${userId}: ${error.message}`);
+      const err = error as Error;
+      this.logger.error(
+        `Error validating session for user ${userId}: ${err.message}`,
+      );
       // If DB error, we might want to fail safe or allow.
-      // For now, allow proceeding if session check fails due to DB error, 
+      // For now, allow proceeding if session check fails due to DB error,
       // as long as token signature is valid.
     }
 
