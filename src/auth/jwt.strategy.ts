@@ -57,12 +57,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         `Error validating session for user ${userId}: ${err.message}`,
       );
       // If DB error, we might want to fail safe or allow.
-      // For now, allow proceeding if session check fails due to DB error,
-      // as long as token signature is valid.
+      // For now, fail safe if session check fails due to DB error.
+      this.logger.error(`Database error during session validation: ${err.message}`);
+      throw new UnauthorizedException('Session validation failed');
     }
 
-    // Relaxed session check: Only throw if session exists and is explicitly inactive.
-    if (session && !session.is_active) {
+    if (!session) {
+      throw new UnauthorizedException('Session not found');
+    }
+
+    if (!session.is_active) {
       throw new UnauthorizedException('Session invalid or expired');
     }
 

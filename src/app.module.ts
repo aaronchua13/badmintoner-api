@@ -9,6 +9,9 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { PlayersModule } from './players/players.module';
+import { CourtsModule } from './courts/courts.module';
+import { ClubsModule } from './clubs/clubs.module';
+import { SchedulesModule } from './schedules/schedules.module';
 import { AppAuthGuard } from './common/guards/app-auth.guard';
 
 @Module({
@@ -42,6 +45,9 @@ import { AppAuthGuard } from './common/guards/app-auth.guard';
     UsersModule,
     AuthModule,
     PlayersModule,
+    CourtsModule,
+    ClubsModule,
+    SchedulesModule,
   ],
   controllers: [AppController],
   providers: [
