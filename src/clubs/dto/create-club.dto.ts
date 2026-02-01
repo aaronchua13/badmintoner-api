@@ -5,6 +5,7 @@ import {
   ValidateNested,
   IsArray,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OmitType } from '@nestjs/mapped-types';
@@ -38,6 +39,12 @@ export class CreateClubDto {
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsEnum(['beginner', 'intermediate', 'advanced'], { each: true })
+  @IsOptional()
+  allowed_player_levels?: string[];
 
   @IsArray()
   @IsOptional()

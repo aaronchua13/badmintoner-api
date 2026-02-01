@@ -31,6 +31,9 @@ export class Club {
 
   @Prop({ default: true })
   is_active: boolean;
+
+  @Prop({ type: [String], enum: ['beginner', 'intermediate', 'advanced'] })
+  allowed_player_levels: string[];
 }
 
 export const ClubSchema = SchemaFactory.createForClass(Club);
