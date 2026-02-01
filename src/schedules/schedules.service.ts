@@ -56,4 +56,52 @@ export class SchedulesService {
     }
     return deletedSchedule;
   }
+
+  async findClubIdsByFilters(filters: {
+    courtIds?: string[];
+    days?: string[];
+    timeRanges?: Array<{ start?: string; end?: string }>;
+  }): Promise<string[]> {
+    const query: Record<string, any> = {};
+
+    if (filters.courtIds && filters.courtIds.length > 0) {
+      query.court_id = { $in: filters.courtIds };
+    }
+
+    if (filters.days && filters.days.length > 0) {
+      // Create regex for each day and use $or, or just $in with exact values?
+      // Since days are usually "Monday", "Tuesday", etc., strict match might be safer if normalized.
+      // But user might send "mon", so regex is better.
+      // However, $in with regex is not supported directly in all Mongo versions cleanly without $or.
+      // Let's use $or with regexes.
+      query.$or = filters.days.map((d) => ({
+        day: { $regex: d, $options: 'i' },
+      }));
+    }
+
+    if (filters.timeRanges && filters.timeRanges.length > 0) {
+      const timeOrConditions = filters.timeRanges.map((range) => {
+        const cond: Record<string, any> = {};
+        if (range.start) cond['$gte'] = range.start;
+        if (range.end) cond['$lt'] = range.end;
+        return { start_time: cond };
+      });
+
+      if (query['$or']) {
+        const existingOr = query['$or'] as Record<string, any>[];
+        query['$and'] = [{ $or: existingOr }, { $or: timeOrConditions }];
+        delete query['$or'];
+      } else {
+        query['$or'] = timeOrConditions;
+      }
+    }
+
+    const schedules = await this.scheduleModel
+      .find(query)
+      .select('club_id')
+      .exec();
+    // Use Set to return unique IDs
+    const clubIds = new Set(schedules.map((s) => s.club_id.toString()));
+    return Array.from(clubIds);
+  }
 }

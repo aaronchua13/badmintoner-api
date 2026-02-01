@@ -44,4 +44,17 @@ export class CourtsService {
     }
     return deletedCourt;
   }
+
+  async findIdsByTerm(term: string): Promise<string[]> {
+    const courts = await this.courtModel
+      .find({
+        $or: [
+          { name: { $regex: term, $options: 'i' } },
+          { location: { $regex: term, $options: 'i' } },
+        ],
+      })
+      .select('_id')
+      .exec();
+    return courts.map((c) => c._id.toString());
+  }
 }
