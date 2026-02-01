@@ -73,11 +73,49 @@ export class ClubsService {
   }
 
   async update(id: string, updateClubDto: UpdateClubDto): Promise<Club | null> {
+    const { schedules, ...clubData } = updateClubDto;
+
     const updatedClub = await this.clubModel
-      .findByIdAndUpdate(id, updateClubDto, { new: true })
+      .findByIdAndUpdate(id, clubData, { new: true })
       .exec();
+
     if (!updatedClub) {
       throw new NotFoundException(`Club #${id} not found`);
+    }
+
+    if (schedules) {
+      // 1. Get existing schedules for this club
+      const existingSchedules = await this.schedulesService.findAllByClub(id);
+      const existingIds = existingSchedules.map((s) => s._id.toString());
+
+      // 2. Identify schedules to delete (exist in DB but not in request)
+      const incomingIds = schedules.filter((s) => s.id).map((s) => s.id);
+
+      const idsToDelete = existingIds.filter(
+        (eid) => !incomingIds.includes(eid),
+      );
+
+      if (idsToDelete.length > 0) {
+        await Promise.all(
+          idsToDelete.map((tid) => this.schedulesService.remove(tid)),
+        );
+      }
+
+      // 3. Update existing or Create new schedules
+      await Promise.all(
+        schedules.map((scheduleDto) => {
+          if (scheduleDto.id) {
+            // Update
+            return this.schedulesService.update(scheduleDto.id, scheduleDto);
+          } else {
+            // Create
+            return this.schedulesService.create({
+              ...scheduleDto,
+              club_id: id,
+            });
+          }
+        }),
+      );
     }
     return updatedClub;
   }

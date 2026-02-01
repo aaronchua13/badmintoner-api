@@ -16,12 +16,18 @@ export class SchedulesService {
     return createdSchedule.save();
   }
 
-  async createMany(createScheduleDtos: CreateScheduleDto[]): Promise<Schedule[]> {
+  async createMany(
+    createScheduleDtos: CreateScheduleDto[],
+  ): Promise<Schedule[]> {
     return this.scheduleModel.insertMany(createScheduleDtos);
   }
 
   async findAll(): Promise<Schedule[]> {
     return this.scheduleModel.find().exec();
+  }
+
+  async findAllByClub(clubId: string): Promise<ScheduleDocument[]> {
+    return this.scheduleModel.find({ club_id: clubId }).exec();
   }
 
   async findOne(id: string): Promise<Schedule | null> {
@@ -42,7 +48,9 @@ export class SchedulesService {
   }
 
   async remove(id: string): Promise<Schedule | null> {
-    const deletedSchedule = await this.scheduleModel.findByIdAndDelete(id).exec();
+    const deletedSchedule = await this.scheduleModel
+      .findByIdAndDelete(id)
+      .exec();
     if (!deletedSchedule) {
       throw new NotFoundException(`Schedule #${id} not found`);
     }

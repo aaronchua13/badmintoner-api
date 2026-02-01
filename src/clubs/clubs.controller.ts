@@ -47,11 +47,13 @@ export class ClubsController {
     return club;
   }
 
+  @Public()
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateClubDto: UpdateClubDto) {
     return this.clubsService.update(id, updateClubDto);
   }
 
+  @Public()
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.clubsService.remove(id);
